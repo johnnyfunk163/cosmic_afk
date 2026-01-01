@@ -16,5 +16,54 @@
   <p>🛡 Shield slot</p>
   <p>⚙ Engine slot</p>
   <button>Забрать AFK</button>
+  <script>
+let softTokens = parseInt(localStorage.getItem('softTokens')) || 0;
+let shipLevel = parseInt(localStorage.getItem('shipLevel')) || 1;
+const afkInterval = 8 * 60 * 60 * 1000; // 8 часов в мс
+let lastClaim = parseInt(localStorage.getItem('lastClaim')) || Date.now();
+
+function updateDisplay() {
+  document.querySelector('.ship').textContent = `КОРАБЛЬ (уровень ${shipLevel})`;
+  document.getElementById('softTokensDisplay').textContent = `Софт-токены: ${softTokens}`;
+}
+
+function claimAFK() {
+  let now = Date.now();
+  let hoursPassed = Math.min(8, (now - lastClaim) / (1000*60*60));
+  let tokensEarned = Math.floor(hoursPassed * 10 * shipLevel);
+  softTokens += tokensEarned;
+  lastClaim = now;
+  localStorage.setItem('softTokens', softTokens);
+  localStorage.setItem('lastClaim', lastClaim);
+  updateDisplay();
+  alert(`Вы собрали ${tokensEarned} софт-токенов!`);
+}
+
+function upgrade(slot) {
+  const cost = shipLevel * 10;
+  if (softTokens >= cost) {
+    softTokens -= cost;
+    shipLevel += 1;
+    localStorage.setItem('softTokens', softTokens);
+    localStorage.setItem('shipLevel', shipLevel);
+    updateDisplay();
+    alert(`${slot} улучшен! Корабль теперь уровня ${shipLevel}`);
+  } else {
+    alert('Недостаточно софт-токенов');
+  }
+}
+
+document.body.insertAdjacentHTML('beforeend', `
+  <div id="softTokensDisplay" style="margin-top:20px;">Софт-токены: ${softTokens}</div>
+  <button onclick="claimAFK()">Забрать AFK</button>
+  <div style="margin-top:20px;">
+    <button onclick="upgrade('Weapon')">Улучшить оружие</button>
+    <button onclick="upgrade('Shield')">Улучшить щит</button>
+    <button onclick="upgrade('Engine')">Улучшить двигатель</button>
+  </div>
+`);
+
+updateDisplay();
+</script>
 </body>
 </html>
