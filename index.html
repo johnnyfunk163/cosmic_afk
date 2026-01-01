@@ -11,7 +11,14 @@
       display:flex; align-items:center; justify-content:center; flex-direction:column;
       background: #111; border-radius: 10px;
     }
-    .slot {margin:5px; padding:5px; border:1px solid #888; width:80%; text-align:center; border-radius:5px;}
+    .slot {
+      margin:5px; padding:5px; border:1px solid #888; width:80%; text-align:center; border-radius:5px;
+      position: relative;
+    }
+    .slot .level-bar {
+      height:6px; background:#0f0; width:0%; position:absolute; bottom:0; left:0; border-radius:3px;
+      transition: width 0.3s;
+    }
     button {padding:10px 20px; font-size:16px; margin:10px;}
     .tokens {margin-top:10px; font-size:18px;}
     .progress-bar {
@@ -27,9 +34,15 @@
 <h1>🚀 Cosmic AFK MVP</h1>
 
 <div class="ship" id="ship">
-  <div class="slot" id="weapon">Weapon: 0</div>
-  <div class="slot" id="shield">Shield: 0</div>
-  <div class="slot" id="engine">Engine: 0</div>
+  <div class="slot" id="weapon">Weapon: 0
+    <div class="level-bar" id="weaponBar"></div>
+  </div>
+  <div class="slot" id="shield">Shield: 0
+    <div class="level-bar" id="shieldBar"></div>
+  </div>
+  <div class="slot" id="engine">Engine: 0
+    <div class="level-bar" id="engineBar"></div>
+  </div>
 </div>
 
 <div class="tokens">
@@ -48,21 +61,29 @@
 <script>
 let softTokens = 0;
 let ship = {weapon:0, shield:0, engine:0};
+const MAX_LEVEL = 10;
 
 let afkInterval = 60 * 1000; // 1 минута для теста
-let lastCollect = Date.now() - afkInterval; // чтобы сразу можно было собрать
+let lastCollect = Date.now() - afkInterval;
 
 const softTokensSpan = document.getElementById('softTokens');
 const weaponSpan = document.getElementById('weapon');
 const shieldSpan = document.getElementById('shield');
 const engineSpan = document.getElementById('engine');
+const weaponBar = document.getElementById('weaponBar');
+const shieldBar = document.getElementById('shieldBar');
+const engineBar = document.getElementById('engineBar');
 const afkProgress = document.getElementById('afkProgress');
 
 function updateUI() {
   softTokensSpan.textContent = softTokens;
-  weaponSpan.textContent = 'Weapon: ' + ship.weapon;
-  shieldSpan.textContent = 'Shield: ' + ship.shield;
-  engineSpan.textContent = 'Engine: ' + ship.engine;
+  weaponSpan.childNodes[0].nodeValue = 'Weapon: ' + ship.weapon;
+  shieldSpan.childNodes[0].nodeValue = 'Shield: ' + ship.shield;
+  engineSpan.childNodes[0].nodeValue = 'Engine: ' + ship.engine;
+
+  weaponBar.style.width = (ship.weapon/MAX_LEVEL*100) + '%';
+  shieldBar.style.width = (ship.shield/MAX_LEVEL*100) + '%';
+  engineBar.style.width = (ship.engine/MAX_LEVEL*100) + '%';
 }
 
 // AFK сбор
@@ -70,7 +91,7 @@ function collectAFK() {
   let now = Date.now();
   let diff = now - lastCollect;
   if(diff >= afkInterval) {
-    let earned = 10 + ship.weapon*2 + ship.shield*1 + ship.engine*1; // базовое начисление + бонусы от корабля
+    let earned = 10 + ship.weapon*2 + ship.shield*1 + ship.engine*1;
     softTokens += earned;
     lastCollect = now;
     updateUI();
@@ -91,9 +112,13 @@ setInterval(() => {
 // Прокачка
 function upgradeSlot(slot) {
   if(softTokens >= 5) {
-    softTokens -= 5;
-    ship[slot]++;
-    updateUI();
+    if(ship[slot] < MAX_LEVEL) {
+      softTokens -= 5;
+      ship[slot]++;
+      updateUI();
+    } else {
+      alert(slot.charAt(0).toUpperCase() + slot.slice(1) + ' уже достиг максимального уровня!');
+    }
   } else {
     alert('Not enough soft tokens!');
   }
