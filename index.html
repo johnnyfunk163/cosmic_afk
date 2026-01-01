@@ -2,122 +2,111 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Cosmic AFK</title>
+  <title>Cosmic AFK MVP</title>
   <style>
-    body {
-      margin:0; 
-      background:black; 
-      color:white; 
-      text-align:center; 
-      font-family:sans-serif;
-    }
+    body {margin:0; background:black; color:white; font-family:sans-serif; text-align:center;}
+    h1 {margin-top:20px;}
     .ship {
-      width:300px; 
-      height:200px; 
-      margin:40px auto; 
-      border:2px solid #555; 
-      display:flex; 
-      align-items:center; 
-      justify-content:space-around;
+      width:200px; height:200px; margin:20px auto; border:2px solid #555;
+      display:flex; align-items:center; justify-content:center; flex-direction:column;
+      background: #111; border-radius: 10px;
     }
-    .slot {
-      width:60px; 
-      height:60px; 
-      border:1px solid #888; 
-      display:flex; 
-      align-items:center; 
-      justify-content:center; 
-      font-size:32px;
+    .slot {margin:5px; padding:5px; border:1px solid #888; width:80%; text-align:center; border-radius:5px;}
+    button {padding:10px 20px; font-size:16px; margin:10px;}
+    .tokens {margin-top:10px; font-size:18px;}
+    .progress-bar {
+      height: 20px; width: 200px; background:#333; margin:10px auto; border-radius:10px; overflow:hidden;
     }
-    button {
-      padding:10px 20px; 
-      font-size:16px; 
-      margin:5px;
-      cursor:pointer;
-    }
-    #controls {
-      margin-top:20px;
+    .progress-inner {
+      height:100%; width:0%; background:#0f0; transition: width 0.3s;
     }
   </style>
 </head>
 <body>
-  <h1>🚀 Cosmic AFK</h1>
 
-  <div class="ship">
-    <div class="slot" id="weaponSlot">🔧</div>
-    <div class="slot" id="shieldSlot">🛡</div>
-    <div class="slot" id="engineSlot">⚙</div>
-  </div>
+<h1>🚀 Cosmic AFK MVP</h1>
 
-  <div id="shipLevelDisplay" style="margin-top:20px;">Корабль: уровень 1</div>
-  <div id="softTokensDisplay" style="margin-top:10px;">Софт-токены: 0</div>
+<div class="ship" id="ship">
+  <div class="slot" id="weapon">Weapon: 0</div>
+  <div class="slot" id="shield">Shield: 0</div>
+  <div class="slot" id="engine">Engine: 0</div>
+</div>
 
-  <button onclick="claimAFK()">Забрать AFK</button>
+<div class="tokens">
+  Soft Tokens: <span id="softTokens">0</span>
+</div>
 
-  <div id="controls">
-    <button onclick="upgrade('Weapon')">Улучшить оружие</button>
-    <button onclick="upgrade('Shield')">Улучшить щит</button>
-    <button onclick="upgrade('Engine')">Улучшить двигатель</button>
-  </div>
+<div class="progress-bar">
+  <div class="progress-inner" id="afkProgress"></div>
+</div>
 
-  <script>
-    // === Переменные ===
-    let softTokens = parseInt(localStorage.getItem('softTokens')) || 0;
-    let shipLevel = parseInt(localStorage.getItem('shipLevel')) || 1;
-    let weaponLevel = parseInt(localStorage.getItem('weaponLevel')) || 1;
-    let shieldLevel = parseInt(localStorage.getItem('shieldLevel')) || 1;
-    let engineLevel = parseInt(localStorage.getItem('engineLevel')) || 1;
+<button id="collectBtn">🚀 Collect AFK</button>
+<button id="upgradeWeapon">Upgrade Weapon (5 tokens)</button>
+<button id="upgradeShield">Upgrade Shield (5 tokens)</button>
+<button id="upgradeEngine">Upgrade Engine (5 tokens)</button>
 
-    const afkInterval = 8 * 60 * 60 * 1000; // 8 часов в мс
-    let lastClaim = parseInt(localStorage.getItem('lastClaim')) || Date.now();
+<script>
+let softTokens = 0;
+let ship = {weapon:0, shield:0, engine:0};
 
-    // === Обновление отображения ===
-    function updateDisplay() {
-      document.getElementById('softTokensDisplay').textContent = `Софт-токены: ${softTokens}`;
-      document.getElementById('weaponSlot').textContent = '🔧'.repeat(weaponLevel);
-      document.getElementById('shieldSlot').textContent = '🛡'.repeat(shieldLevel);
-      document.getElementById('engineSlot').textContent = '⚙'.repeat(engineLevel);
-      document.getElementById('shipLevelDisplay').textContent = `Корабль: уровень ${shipLevel}`;
-    }
+let afkInterval = 60 * 1000; // 1 минута для теста
+let lastCollect = Date.now() - afkInterval; // чтобы сразу можно было собрать
 
-    // === Забрать AFK ===
-    function claimAFK() {
-      let now = Date.now();
-      let hoursPassed = Math.min(8, (now - lastClaim) / (1000*60*60));
-      let tokensEarned = Math.floor(hoursPassed * 10 * shipLevel);
-      if(tokensEarned > 0){
-        softTokens += tokensEarned;
-        lastClaim = now;
-        localStorage.setItem('softTokens', softTokens);
-        localStorage.setItem('lastClaim', lastClaim);
-        updateDisplay();
-        alert(`Вы собрали ${tokensEarned} софт-токенов!`);
-      } else {
-        alert("Вы уже забрали AFK. Следующий сбор будет через 8 часов.");
-      }
-    }
+const softTokensSpan = document.getElementById('softTokens');
+const weaponSpan = document.getElementById('weapon');
+const shieldSpan = document.getElementById('shield');
+const engineSpan = document.getElementById('engine');
+const afkProgress = document.getElementById('afkProgress');
 
-    // === Улучшение корабля ===
-    function upgrade(slot) {
-      const cost = shipLevel * 10;
-      if (softTokens >= cost) {
-        softTokens -= cost;
-        shipLevel += 1;
+function updateUI() {
+  softTokensSpan.textContent = softTokens;
+  weaponSpan.textContent = 'Weapon: ' + ship.weapon;
+  shieldSpan.textContent = 'Shield: ' + ship.shield;
+  engineSpan.textContent = 'Engine: ' + ship.engine;
+}
 
-        if (slot === 'Weapon') { weaponLevel += 1; localStorage.setItem('weaponLevel', weaponLevel); }
-        if (slot === 'Shield') { shieldLevel += 1; localStorage.setItem('shieldLevel', shieldLevel); }
-        if (slot === 'Engine') { engineLevel += 1; localStorage.setItem('engineLevel', engineLevel); }
+// AFK сбор
+function collectAFK() {
+  let now = Date.now();
+  let diff = now - lastCollect;
+  if(diff >= afkInterval) {
+    let earned = 10 + ship.weapon*2 + ship.shield*1 + ship.engine*1; // базовое начисление + бонусы от корабля
+    softTokens += earned;
+    lastCollect = now;
+    updateUI();
+    alert(`Collected ${earned} soft tokens!`);
+  } else {
+    alert('AFK not ready yet!');
+  }
+}
 
-        localStorage.setItem('softTokens', softTokens);
-        localStorage.setItem('shipLevel', shipLevel);
-        updateDisplay();
-        alert(`${slot} улучшен! Корабль теперь уровня ${shipLevel}`);
-      } else {
-        alert('Недостаточно софт-токенов');
-      }
-    }
+// AFK прогресс бар
+setInterval(() => {
+  let now = Date.now();
+  let diff = now - lastCollect;
+  let percent = Math.min((diff/afkInterval)*100, 100);
+  afkProgress.style.width = percent + '%';
+}, 500);
 
-    updateDisplay();
-  </script>
+// Прокачка
+function upgradeSlot(slot) {
+  if(softTokens >= 5) {
+    softTokens -= 5;
+    ship[slot]++;
+    updateUI();
+  } else {
+    alert('Not enough soft tokens!');
+  }
+}
+
+// события кнопок
+document.getElementById('collectBtn').addEventListener('click', collectAFK);
+document.getElementById('upgradeWeapon').addEventListener('click', () => upgradeSlot('weapon'));
+document.getElementById('upgradeShield').addEventListener('click', () => upgradeSlot('shield'));
+document.getElementById('upgradeEngine').addEventListener('click', () => upgradeSlot('engine'));
+
+updateUI();
+</script>
+
 </body>
 </html>
