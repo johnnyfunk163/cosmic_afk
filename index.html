@@ -4,66 +4,120 @@
   <meta charset="utf-8">
   <title>Cosmic AFK</title>
   <style>
-    body {margin:0; background:black; color:white; text-align:center; font-family:sans-serif;}
-    .ship {width:200px; height:200px; margin:40px auto; border:2px solid #555; display:flex; align-items:center; justify-content:center;}
-    button {padding:10px 20px; font-size:16px; margin-top:20px;}
+    body {
+      margin:0; 
+      background:black; 
+      color:white; 
+      text-align:center; 
+      font-family:sans-serif;
+    }
+    .ship {
+      width:300px; 
+      height:200px; 
+      margin:40px auto; 
+      border:2px solid #555; 
+      display:flex; 
+      align-items:center; 
+      justify-content:space-around;
+    }
+    .slot {
+      width:60px; 
+      height:60px; 
+      border:1px solid #888; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:32px;
+    }
+    button {
+      padding:10px 20px; 
+      font-size:16px; 
+      margin:5px;
+      cursor:pointer;
+    }
+    #controls {
+      margin-top:20px;
+    }
   </style>
 </head>
 <body>
   <h1>🚀 Cosmic AFK</h1>
-  <div class="ship">КОРАБЛЬ</div>
-  <p>🔧 Weapon slot</p>
-  <p>🛡 Shield slot</p>
-  <p>⚙ Engine slot</p>
-  <button>Забрать AFK</button>
-  <script>
-let softTokens = parseInt(localStorage.getItem('softTokens')) || 0;
-let shipLevel = parseInt(localStorage.getItem('shipLevel')) || 1;
-const afkInterval = 8 * 60 * 60 * 1000; // 8 часов в мс
-let lastClaim = parseInt(localStorage.getItem('lastClaim')) || Date.now();
 
-function updateDisplay() {
-  document.querySelector('.ship').textContent = `КОРАБЛЬ (уровень ${shipLevel})`;
-  document.getElementById('softTokensDisplay').textContent = `Софт-токены: ${softTokens}`;
-}
+  <div class="ship">
+    <div class="slot" id="weaponSlot">🔧</div>
+    <div class="slot" id="shieldSlot">🛡</div>
+    <div class="slot" id="engineSlot">⚙</div>
+  </div>
 
-function claimAFK() {
-  let now = Date.now();
-  let hoursPassed = Math.min(8, (now - lastClaim) / (1000*60*60));
-  let tokensEarned = Math.floor(hoursPassed * 10 * shipLevel);
-  softTokens += tokensEarned;
-  lastClaim = now;
-  localStorage.setItem('softTokens', softTokens);
-  localStorage.setItem('lastClaim', lastClaim);
-  updateDisplay();
-  alert(`Вы собрали ${tokensEarned} софт-токенов!`);
-}
+  <div id="shipLevelDisplay" style="margin-top:20px;">Корабль: уровень 1</div>
+  <div id="softTokensDisplay" style="margin-top:10px;">Софт-токены: 0</div>
 
-function upgrade(slot) {
-  const cost = shipLevel * 10;
-  if (softTokens >= cost) {
-    softTokens -= cost;
-    shipLevel += 1;
-    localStorage.setItem('softTokens', softTokens);
-    localStorage.setItem('shipLevel', shipLevel);
-    updateDisplay();
-    alert(`${slot} улучшен! Корабль теперь уровня ${shipLevel}`);
-  } else {
-    alert('Недостаточно софт-токенов');
-  }
-}
-
-document.body.insertAdjacentHTML('beforeend', `
-  <div id="softTokensDisplay" style="margin-top:20px;">Софт-токены: ${softTokens}</div>
   <button onclick="claimAFK()">Забрать AFK</button>
-  <div style="margin-top:20px;">
+
+  <div id="controls">
     <button onclick="upgrade('Weapon')">Улучшить оружие</button>
     <button onclick="upgrade('Shield')">Улучшить щит</button>
     <button onclick="upgrade('Engine')">Улучшить двигатель</button>
   </div>
-`);
 
-updateDisplay();
-</script>
+  <script>
+    // === Переменные ===
+    let softTokens = parseInt(localStorage.getItem('softTokens')) || 0;
+    let shipLevel = parseInt(localStorage.getItem('shipLevel')) || 1;
+    let weaponLevel = parseInt(localStorage.getItem('weaponLevel')) || 1;
+    let shieldLevel = parseInt(localStorage.getItem('shieldLevel')) || 1;
+    let engineLevel = parseInt(localStorage.getItem('engineLevel')) || 1;
+
+    const afkInterval = 8 * 60 * 60 * 1000; // 8 часов в мс
+    let lastClaim = parseInt(localStorage.getItem('lastClaim')) || Date.now();
+
+    // === Обновление отображения ===
+    function updateDisplay() {
+      document.getElementById('softTokensDisplay').textContent = `Софт-токены: ${softTokens}`;
+      document.getElementById('weaponSlot').textContent = '🔧'.repeat(weaponLevel);
+      document.getElementById('shieldSlot').textContent = '🛡'.repeat(shieldLevel);
+      document.getElementById('engineSlot').textContent = '⚙'.repeat(engineLevel);
+      document.getElementById('shipLevelDisplay').textContent = `Корабль: уровень ${shipLevel}`;
+    }
+
+    // === Забрать AFK ===
+    function claimAFK() {
+      let now = Date.now();
+      let hoursPassed = Math.min(8, (now - lastClaim) / (1000*60*60));
+      let tokensEarned = Math.floor(hoursPassed * 10 * shipLevel);
+      if(tokensEarned > 0){
+        softTokens += tokensEarned;
+        lastClaim = now;
+        localStorage.setItem('softTokens', softTokens);
+        localStorage.setItem('lastClaim', lastClaim);
+        updateDisplay();
+        alert(`Вы собрали ${tokensEarned} софт-токенов!`);
+      } else {
+        alert("Вы уже забрали AFK. Следующий сбор будет через 8 часов.");
+      }
+    }
+
+    // === Улучшение корабля ===
+    function upgrade(slot) {
+      const cost = shipLevel * 10;
+      if (softTokens >= cost) {
+        softTokens -= cost;
+        shipLevel += 1;
+
+        if (slot === 'Weapon') { weaponLevel += 1; localStorage.setItem('weaponLevel', weaponLevel); }
+        if (slot === 'Shield') { shieldLevel += 1; localStorage.setItem('shieldLevel', shieldLevel); }
+        if (slot === 'Engine') { engineLevel += 1; localStorage.setItem('engineLevel', engineLevel); }
+
+        localStorage.setItem('softTokens', softTokens);
+        localStorage.setItem('shipLevel', shipLevel);
+        updateDisplay();
+        alert(`${slot} улучшен! Корабль теперь уровня ${shipLevel}`);
+      } else {
+        alert('Недостаточно софт-токенов');
+      }
+    }
+
+    updateDisplay();
+  </script>
 </body>
 </html>
